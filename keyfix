@@ -1,0 +1,70 @@
+#!/bin/bash
+# Victor J. Roemer - Oct 20, 2011
+# A script to remove hostname and address keys from the 
+# .ssh/known_hosts file 
+
+HOST=$1
+ADDRESS=
+NAME=`basename $0`
+
+# pull the associated address for the host via dns lookup
+get_address() {
+    ADDRESS=$(nslookup $HOST | grep "Address:\ " | cut -f 2 -d ' ')
+}
+
+# remove the host key
+remove_host() {
+    ssh-keygen -R $HOST &> /dev/null
+}
+
+# remove the address key
+remove_address() {
+    ssh-keygen -R $ADDRESS &> /dev/null
+}
+
+# Print usage Usage
+usage() {
+    echo "$NAME \$HOSTNAME"
+    echo ""
+    echo "  -host           remove a specific host key"
+    echo "  -ip|-address    remove a specific address key"
+    echo "  -h|--help       display this help"
+    echo ""
+}
+
+# No-op specified
+if [ $# -eq 0 ]; then
+    echo "$NAME: please specify a host to remove from .ssh/known_hosts"
+    exit 1
+fi
+
+# Remove specific element
+if [ $# -gt 0 ]; then
+    case "$1" in
+    -host)
+        if [ $# -gt 1 ]; then HOST=$2; remove_host; exit 0
+        else echo "$NAME: opt '$1' requires an arguement"; exit 1; fi
+        ;;
+    -ip|-address)
+        if [ $# -gt 1 ]; then ADDRESS=$2; remove_address; exit 0
+        else echo "$NAME: opt '$1' requires an arguement"; exit 1; fi
+        ;;
+    -h|--help)
+        usage
+        exit 1
+        ;;
+    -*)
+        echo "$NAME: invalid option - '$1'"
+        exit 1
+        ;;
+    esac
+fi
+
+# Default, remove hostname and address key pair
+get_address
+remove_address
+remove_host
+
+
+
+
